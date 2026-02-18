@@ -1,39 +1,62 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
+import { Client } from "pg";
+import { CreateTareaDto } from "./dto/CreateTareaDto";
 
 @Injectable()
 export class TareaService {
 
-    public crearTarea(data: any) {
+    constructor(
+        @Inject('DATABASE_CONNECTION') private db: Client    
+    ){}
+
+    public  async crearTarea(task: CreateTareaDto) { 
+        const query = 'INSERT INTO tarea (name, description, priority, user_id) VALUES ($1, $2, $3, $4) RETURNING *;';
+        const values = [task.name, task.description, task.priority, task.user_id];
+        const result = await this.db.query(query, values);
+
         return {
             mensaje: 'Tarea creada correctamente',
-            data
+            data: result.rows,
+            Estado : true
         };
     }
 
-    public getTodasLasTareas() {
+    public  async getTodasLasTareas() {
+        const query = 'SELECT * FROM tarea;';
+        const result =  await this.db.query(query);
+
         return {
             mensaje: 'Lista de tareas obtenida',
-            tareas: []
+            tareas:  result.rows
         };
     }
 
-    public getTareaById(id: number) {
+    public async getTareaById(id: number) {
+        const query = 'SELECT * FROM tarea WHERE id = $1;';
+        const result = await this.db.query(query, [id]);
         return {
             mensaje: `Se obtuvo la tarea ${id}`,
-            tarea: { id }
+            tarea: result.rows
         };
     }
 
-    public actualizarTarea(id: number, data: any) {
+    public async actualizarTarea(id: number, data: CreateTareaDto) {
+        const query = 'UPDATE tarea SET name = $1, description = $2, priority = $3, user_id = $4 WHERE id = $5 RETURNING *;';
+        const values = [data.name, data.description, data.priority, data.user_id, id];
+        const result = await this.db.query(query, [id]);
         return {
             mensaje: `Tarea ${id} actualizada correctamente`,
-            data
+             data: result.rows
         };
     }
 
-    public eliminarTarea(id: number) {
+    public async eliminarTarea(id: number) {
+        const query = 'DELETE FROM tarea WHERE id = $1;';
+        const result =  await this.db.query(query , [id]);
+
         return {
-            mensaje: `Tarea ${id} eliminada correctamente`
+            mensaje: `Tarea ${id} eliminada correctamente`,
+            data : true
         };
     }
 }

@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Param, Body } from "@nestjs/common";
 import { TareaService } from "./tarea.service";
+import { CreateTareaDto } from "./dto/CreateTareaDto";  
 
 @Controller('api/tareas')
 export class TareaController {
@@ -7,30 +8,30 @@ export class TareaController {
     constructor(private readonly tareaService: TareaService) {}
 
     @Post()
-    crearTarea(@Body() data: any) {
-        return this.tareaService.crearTarea(data);
+     async crearTarea (@Body() data: CreateTareaDto) {
+        return await this.tareaService.crearTarea(data);
     }
 
     @Get()
-    getTodas() {
-        return this.tareaService.getTodasLasTareas();
+    async getTodas(): Promise<any> {
+        return await this.tareaService.getTodasLasTareas();
     }
 
     @Get(':id')
-    getById(@Param('id') id: string) {
-        return this.tareaService.getTareaById(Number(id));
+    async getById(@Param('id') id: string): Promise<any> {
+        return await this.tareaService.getTareaById(Number(id));
     }
 
     @Put(':id')
-    actualizar(
+    async actualizar(
         @Param('id') id: string,
-        @Body() data: any
-    ) {
-        return this.tareaService.actualizarTarea(Number(id), data);
+        @Body() data: CreateTareaDto
+    ) : Promise<any>{
+        return await this.tareaService.actualizarTarea(Number(id), data);
     }
 
     @Delete(':id')
-    eliminar(@Param('id') id: string) {
-        return this.tareaService.eliminarTarea(Number(id));
+    async eliminar(@Param('id') id: string): Promise<any> {
+        return await this.tareaService.eliminarTarea(Number(id));
     }
 }
