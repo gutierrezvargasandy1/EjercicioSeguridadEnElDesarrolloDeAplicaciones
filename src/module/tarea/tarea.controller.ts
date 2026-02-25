@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body } from "@nestjs/common";
 import { TareaService } from "./tarea.service";
 import { CreateTareaDto } from "./dto/CreateTareaDto";  
+import { UpdateTareaDto } from "./dto/update.tarea.dto";
 
 @Controller('api/tareas')
 export class TareaController {
@@ -25,7 +26,7 @@ export class TareaController {
     @Put(':id')
     async actualizar(
         @Param('id') id: string,
-        @Body() data: CreateTareaDto
+        @Body() data: UpdateTareaDto
     ) : Promise<any>{
         return await this.tareaService.actualizarTarea(Number(id), data);
     }
