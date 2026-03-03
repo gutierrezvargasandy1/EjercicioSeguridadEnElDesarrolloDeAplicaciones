@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpException, HttpStatus, Par
 import { TaskService } from '../service/task.service'
 import { UpdateTaskDto } from '../dto/update-task.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CreateTaskDto } from '../dto/create-task.dto';
 
 @ApiTags('task')
 @Controller('api/task')
@@ -26,7 +27,7 @@ export class TaskController {
   }
 
  @Post()
-  public async insertTask(@Body() task: any): Promise<any> {
+  public async insertTask(@Body() task: CreateTaskDto): Promise<any> {
     return await this.taskSvc.insertTask(task);
   }
 
@@ -42,6 +43,6 @@ export class TaskController {
     if (!result) 
         throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
 
-    return result;
+    return true;
   }
 }

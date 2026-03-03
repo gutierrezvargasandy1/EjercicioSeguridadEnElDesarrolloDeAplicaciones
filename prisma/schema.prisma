@@ -5,10 +5,18 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  priority    Boolean
+  user_id     Int
 }
