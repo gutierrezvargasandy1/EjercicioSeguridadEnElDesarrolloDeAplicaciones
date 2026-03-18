@@ -31,6 +31,18 @@
 $ npm install
 ```
 
+----
+Ejecuta el siguiente comado para poder migrar los modelos a la base de datos 
+
+npx prisma migrate dev --name init
+
+Ejecuta el siguiente comando para generar el Cliente Prissma 
+
+npx prisma generate 
+
+
+
+
 ## Compile and run the project
 
 ```bash
@@ -96,3 +108,5 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
