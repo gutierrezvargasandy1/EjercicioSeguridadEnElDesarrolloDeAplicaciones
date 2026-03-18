@@ -21,7 +21,9 @@ export class UtilService {
     }
 
     public async getPayload(token: string):Promise<any> {
+        console.log(process.env.JWT_SECRET, "SECRET");
            return await this.jwtSvc.verifyAsync(token, { secret: process.env.JWT_SECRET });
+           
     }
 
 }
