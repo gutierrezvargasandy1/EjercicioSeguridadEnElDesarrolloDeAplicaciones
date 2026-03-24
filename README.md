@@ -41,7 +41,10 @@ Ejecuta el siguiente comando para generar el Cliente Prissma
 npx prisma generate 
 
 
+npm install --save-dev prisma dotenv
 
+DATABASE_URL="postgresql://postgres:linux@localhost:5432/task_db"
+JWT_SECRET="mi_clave_secreta_super_segura"
 
 ## Compile and run the project
 
