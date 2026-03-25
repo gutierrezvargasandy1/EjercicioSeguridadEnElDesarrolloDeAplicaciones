@@ -18,7 +18,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Registrar un nuevo usuario' })
   public async insertUser(@Body() user: CreateUserDto): Promise<any> {
     try {
-      user.password = await this.utilService.hashPassword(user.password);
+      user.password = await this.utilService.hash(user.password);
       return await this.usersService.insertUser(user);
     } catch (error) {
       throw new HttpException('Error creating user', HttpStatus.INTERNAL_SERVER_ERROR);
@@ -38,7 +38,7 @@ export class UsersController {
   public async updateProfile(@Request() req: any, @Body() updateUserDto: UpdateUserDto): Promise<User> {
     try {
       if (updateUserDto.password) {
-        updateUserDto.password = await this.utilService.hashPassword(updateUserDto.password);
+        updateUserDto.password = await this.utilService.hash(updateUserDto.password);
       }
       return await this.usersService.updateUser(req.user.id, updateUserDto);
     } catch (error) {

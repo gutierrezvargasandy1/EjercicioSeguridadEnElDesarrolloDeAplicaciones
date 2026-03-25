@@ -12,8 +12,22 @@ export class AuthService {
     });
   }
 
+    public async getUserById(id: number) : Promise<User | null>{
+    return await this.prisma.user.findFirst({ 
+      where: { id } 
+    });
+  }
+
   public logIn(): string {
     return 'Sesión exitosa';
+  }
+
+  public async updateHash(user_id: number,hash: string | null ){
+    return await this.prisma.user.update({
+      where: {id: user_id },
+      data:{hash} as any
+    });
+
   }
 
 }

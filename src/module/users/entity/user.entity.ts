@@ -5,4 +5,5 @@ export class User {
     username: string;
     password?: string;
     created_at: Date;
+    hash?: string |null;
 }
