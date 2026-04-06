@@ -29,7 +29,7 @@ loadTask() {
       this.task = {
         name: t?.name || 'Sin nombre',
         description: t?.description || 'No hay descripción',
-        priority: t?.priority || 'Normal',
+        priority: t?.priority ? 'Prioridad' : 'Normal',
         createdAt: t?.created_at || new Date(),
         completed: t?.created_at ?? false
       };

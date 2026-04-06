@@ -7,6 +7,7 @@
     <li *ngFor="let task of tasks" class="tarea-item">
       <span [routerLink]="['/dashboard/tasks', task.id]" class="tarea-link">{{ task.name }}</span>
       <button (click)="deleteTask(task.id)" class="btn-eliminar">Eliminar</button>
+      <button [routerLink]="['/dashboard/tasks/edit', task.id]" class="btn-update">Editar</button>
     </li>
   </ul>
 </div>

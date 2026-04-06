@@ -5,7 +5,6 @@
   <p><strong>Descripción:</strong> {{ task.description }}</p>
   <p><strong>Prioridad:</strong> {{ task.priority }}</p>
   <p><strong>Fecha de creación:</strong> {{ task.createdAt | date:'short' }}</p>
-  <p><strong>Estado:</strong> {{ task.completed ? 'Completada' : 'Pendiente' }}</p>
 
   <button routerLink="/dashboard/tasks">Volver a la lista</button>
 </div>
