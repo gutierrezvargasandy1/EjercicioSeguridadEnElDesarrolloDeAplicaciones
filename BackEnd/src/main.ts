@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
-import { AllExceptionFilter } from './common/filters/http-exception.filter';
 import cookieParser from 'cookie-parser';
 
 dotenv.config(); 
@@ -23,7 +22,6 @@ async function bootstrap() {
     whitelist: true,
   }));
 
-  app.useGlobalFilters(new AllExceptionFilter());
 
   // Swagger
   const config = new DocumentBuilder()
