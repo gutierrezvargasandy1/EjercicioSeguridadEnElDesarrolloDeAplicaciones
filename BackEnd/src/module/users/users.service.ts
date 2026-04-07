@@ -33,7 +33,6 @@ export class UsersService {
         name: true,
         lastname: true,
         username: true,
-        password: false,
         created_at: true
       }
     });
@@ -45,5 +44,38 @@ export class UsersService {
     });
     return true;
   }
+
+  public async getUsers(): Promise<User[]> {
+  return await this.prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      lastname: true,
+      username: true,
+      created_at: true
+    }
+  });
+}
+public async getUserById(id: number): Promise<User> {
+  const user = await this.prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      lastname: true,
+      username: true,
+      created_at: true
+    }
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user;
+}
+
+
+
 
 }
