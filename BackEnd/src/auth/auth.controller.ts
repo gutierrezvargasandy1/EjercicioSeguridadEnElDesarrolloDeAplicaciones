@@ -36,7 +36,6 @@ public async logIn(
 public async getProfile(@Req() request: any) {
   const user = request.user;
 
-  console.log(this.authServices.getUserById(user.id));
   return this.authServices.getUserById(user.id);
 }
 

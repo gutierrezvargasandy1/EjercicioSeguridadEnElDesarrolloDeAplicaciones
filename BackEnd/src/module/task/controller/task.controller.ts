@@ -32,7 +32,6 @@ export class TaskController {
   @Post()
   @UseGuards(AuthGuard)
   public async insertTask(@Body() task: CreateTaskDto, @Request() req: any): Promise<any> {
-    console.log (req.user.id);
     return await this.taskSvc.insertTask(task, req.user.id);
   }
 

@@ -10,7 +10,6 @@ export class AuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest() as Request;
         const token = this.extractTokenFromHeader(request);
-        console.log(token, "Este es el toquen JWT")
 
         if (!token)
             throw new UnauthorizedException();
@@ -21,7 +20,6 @@ export class AuthGuard implements CanActivate {
         }
 
         catch(error){
-            console.log  (error)
             throw new UnauthorizedException();
         }
 
