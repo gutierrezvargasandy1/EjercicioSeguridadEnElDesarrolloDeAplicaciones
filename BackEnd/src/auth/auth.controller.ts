@@ -1,14 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpException, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { AuthDto } from './dto/auth.dto';
 import { UtilService } from 'src/common/services/util.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { Res } from '@nestjs/common';
 import {AuthService} from './auth.service'
+import { CreateUserDto } from 'src/module/users/dto/create-user.dto';
+import { UsersService } from 'src/module/users/users.service';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly utilSvc: UtilService, private readonly authServices: AuthService) {}
+  constructor(private readonly utilSvc: UtilService, private readonly authServices: AuthService, private readonly usersService: UsersService, private readonly utilService: UtilService) {}
 
 @Post('login')
 @HttpCode(HttpStatus.OK)
@@ -92,6 +94,18 @@ public async logOut(
 
   return { message: 'Sesión cerrada correctamente' };
 }
+
+
+  @Post('register')
+  @ApiOperation({ summary: 'Registrar un nuevo usuario' })
+  public async insertUser(@Body() user: CreateUserDto): Promise<any> {
+    try {
+      user.password = await this.utilService.hash(user.password);
+      return await this.usersService.insertUser(user);
+    } catch (error) {
+      throw new HttpException('Error creating user', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 
 
 }
