@@ -30,6 +30,14 @@ export class AuthService {
 
   }
 
+  public async deleteUser(user_id: number){
+    return await this.prisma.user.delete({
+      where:{id: user_id}
+    })
+
+
+  }
+
   
 
 }

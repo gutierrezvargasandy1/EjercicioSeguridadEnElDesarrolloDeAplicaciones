@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpException, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpException, HttpStatus, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { AuthDto } from './dto/auth.dto';
 import { UtilService } from 'src/common/services/util.service';
@@ -107,5 +107,17 @@ public async logOut(
     }
   }
 
-
+  @Delete('delete') 
+  @ApiOperation({ summary: 'Eliminar un usuario' })
+  @UseGuards(AuthGuard)
+  public async deleteUser(@Req() req: any): Promise<any> {
+    try {
+      const user = req.user;
+      await this.utilService.logout(user.id);
+      await this.authServices.deleteUser(user.id);
+      return { message: 'Usuario eliminado correctamente' };
+    } catch (error) {
+      throw new HttpException('Error deleting user', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 }
