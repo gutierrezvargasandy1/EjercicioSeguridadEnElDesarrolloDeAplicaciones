@@ -38,6 +38,13 @@ export class AuthService {
 
   }
 
+  public async updateUser(id: number, data: any) {
+  return await this.prisma.user.update({
+    where: { id },
+    data,
+  });
+}
+
   
 
 }
