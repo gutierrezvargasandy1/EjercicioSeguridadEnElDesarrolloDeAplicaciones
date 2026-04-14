@@ -1,19 +1,23 @@
 import { IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
+import { Transform } from "class-transformer";
 
 export class CreateUserDto {
 
+    @Transform(({ value }) => value?.trim())
     @IsNotEmpty({ message: 'El nombre es obligatorio' })
     @IsString({ message: 'El nombre debe ser una cadena de texto' })
     @MinLength(3, { message: 'El nombre debe tener al menos 3 caracteres' })
     @MaxLength(50, { message: 'El nombre no puede tener más de 50 caracteres' })
     name: string;
     
+    @Transform(({ value }) => value?.trim())
     @IsNotEmpty({ message: 'El apellido es obligatorio' })
     @IsString({ message: 'El apellido debe ser una cadena de texto' })
     @MinLength(3, { message: 'El apellido debe tener al menos 3 caracteres' })
     @MaxLength(50, { message: 'El apellido no puede tener más de 50 caracteres' })
     lastname: string;
 
+    @Transform(({ value }) => value?.trim())
     @IsNotEmpty({ message: 'El nombre de usuario es obligatorio' })
     @IsString({ message: 'El nombre de usuario debe ser una cadena de texto' })
     @MinLength(3, { message: 'El nombre de usuario debe tener al menos 3 caracteres' })
