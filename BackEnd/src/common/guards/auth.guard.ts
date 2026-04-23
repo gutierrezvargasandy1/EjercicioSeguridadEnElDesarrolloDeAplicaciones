@@ -2,12 +2,13 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  UnauthorizedException,
-  ForbiddenException
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
 import { UtilService } from "../services/util.service";
+import { AppException } from "../exceptions/AppException";
+import { ErrorCodes } from "../exceptions/errorCodes";
+import { HttpStatus } from "@nestjs/common";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -22,8 +23,13 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromHeader(request);
 
+    // ================= NO TOKEN =================
     if (!token) {
-      throw new UnauthorizedException('Token no proporcionado');
+      throw new AppException(
+        'Token no proporcionado',
+        HttpStatus.UNAUTHORIZED,
+        ErrorCodes.UNAUTHORIZED,
+      );
     }
 
     try {
@@ -36,18 +42,30 @@ export class AuthGuard implements CanActivate {
         context.getHandler()
       );
 
+      // ================= ROLES =================
       if (requiredRoles && requiredRoles.length > 0) {
+
         const hasRole = requiredRoles.includes(payload.role);
 
         if (!hasRole) {
-          throw new ForbiddenException('No tienes permisos');
+          throw new AppException(
+            'No tienes permisos para acceder a este recurso',
+            HttpStatus.FORBIDDEN,
+            ErrorCodes.FORBIDDEN,
+          );
         }
       }
 
       return true;
 
-    } catch {
-      throw new UnauthorizedException('Token inválido o expirado');
+    } catch (error) {
+
+      // ================= TOKEN ERROR =================
+      throw new AppException(
+        'Token inválido o expirado',
+        HttpStatus.UNAUTHORIZED,
+        ErrorCodes.INVALID_TOKEN,
+      );
     }
   }
 

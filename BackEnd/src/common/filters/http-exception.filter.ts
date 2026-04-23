@@ -2,60 +2,66 @@ import {
   ExceptionFilter,
   Catch,
   ArgumentsHost,
-  HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import * as jwt from 'jsonwebtoken';
+
+import { Prisma } from '@prisma/client';
+import { AppException } from '../exceptions/AppException';
+import { ErrorCodes } from '../exceptions/errorCodes';
 
 @Catch()
 export class AllExceptionFilter implements ExceptionFilter {
-  constructor(private prisma: PrismaService) {}
-
-  async catch(exception: unknown, host: ArgumentsHost) {
+  catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse();
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    // ================= PRISMA ERRORS =================
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
 
-    const message =
-      exception instanceof HttpException
-        ? JSON.stringify(exception.getResponse())
-        : 'Internal server error';
+      switch (exception.code) {
 
-    let userId: number | null = null;
+        case 'P2002':
+          return response.status(HttpStatus.CONFLICT).json(
+            new AppException(
+              'Ya existe un registro con estos datos',
+              HttpStatus.CONFLICT,
+              ErrorCodes.UNIQUE_CONSTRAINT,
+            ).getResponse(),
+          );
 
-    try {
-      const token =
-        request.cookies?.access_token ||
-        request.headers.authorization?.split(' ')[1];
+        case 'P2003':
+          return response.status(HttpStatus.BAD_REQUEST).json(
+            new AppException(
+              'Error de relación entre entidades',
+              HttpStatus.BAD_REQUEST,
+              ErrorCodes.FOREIGN_KEY_ERROR,
+            ).getResponse(),
+          );
 
-      if (token) {
-        const decoded: any = jwt.decode(token);
-        userId = decoded?.id ?? null;
+        default:
+          return response.status(HttpStatus.BAD_REQUEST).json(
+            new AppException(
+              'Error en la base de datos',
+              HttpStatus.BAD_REQUEST,
+              ErrorCodes.DATABASE_ERROR,
+            ).getResponse(),
+          );
       }
-    } catch (e) {}
+    }
 
-    await this.prisma.logs.create({
-      data: {
-        statusCode: status,
-        path: request.url,
-        error: message,
-        errorCode: 'EXCEPTION',
-        session_id: userId,
-      },
-    });
+    // ================= APP ERROR =================
+    if (exception instanceof AppException) {
+      return response
+        .status(exception.getStatus())
+        .json(exception.getResponse());
+    }
 
-    response.status(status).json({
-      statusCode: status,
+    // ================= UNKNOWN =================
+    return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error interno del servidor',
+      errorCode: ErrorCodes.INTERNAL_ERROR,
       timestamp: new Date().toISOString(),
-      path: request.url,
-      message,
     });
   }
 }
