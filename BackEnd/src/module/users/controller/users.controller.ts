@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, ParseIntPipe, Patch, Post, Request, UseGuards } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { UsersService } from '../service/users.service';
 import { ApiOperation } from '@nestjs/swagger';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entity/user.entity';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
+import { User } from '../entity/user.entity';
 import { UtilService } from 'src/common/services/util.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
+import { Roles } from 'src/common/decorators/role.decorator';
 
 @Controller('api/users')
 export class UsersController {
@@ -15,6 +16,8 @@ export class UsersController {
   ) {}
 
   @Post()
+  @UseGuards(AuthGuard)
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'Registrar un nuevo usuario' })
   public async insertUser(@Body() user: CreateUserDto): Promise<any> {
     try {
@@ -26,35 +29,9 @@ export class UsersController {
   }
 
 
-@UseGuards(AuthGuard)
-@Patch('profile')
-@ApiOperation({ summary: 'Actualizar perfil del usuario autenticado' })
-public async updateProfile(
-  @Request() req: any,
-  @Body() updateUserDto: UpdateUserDto
-): Promise<User> {
-  try {
-    // Ya no se procesa password porque no existe en el DTO
-    return await this.usersService.updateUser(req.user.id, updateUserDto);
-  } catch (error) {
-    throw new HttpException('Error updating user', HttpStatus.INTERNAL_SERVER_ERROR);
-  }
-}
-
-
   @UseGuards(AuthGuard)
-  @Delete('profile')
-  @ApiOperation({ summary: 'Eliminar cuenta del usuario autenticado' })
-  public async deleteProfile(@Request() req: any): Promise<any> {
-    try {
-      return await this.usersService.deleteUser(req.user.id);
-    } catch (error) {
-      throw new HttpException('Error deleting user', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  @UseGuards(AuthGuard)
-  @Get()
+  @Get()  @UseGuards(AuthGuard)
+  @Roles('ADMIN')
   @ApiOperation({ summary: 'Obtener todos los usuarios' })
   public async getUsers(): Promise<User[]> {
   try {
@@ -66,6 +43,7 @@ public async updateProfile(
 
 @UseGuards(AuthGuard)
 @Delete(':id')
+@Roles('ADMIN')
 @ApiOperation({ summary: 'Eliminar usuario por ID' })
 public async deleteUser(
   @Param('id', ParseIntPipe) id: number
@@ -79,6 +57,7 @@ public async deleteUser(
 
 @UseGuards(AuthGuard)
 @Get(':id')
+@Roles('ADMIN')
 @ApiOperation({ summary: 'Obtener usuario por ID' })
 public async getUserById(
   @Param('id', ParseIntPipe) id: number
@@ -92,6 +71,7 @@ public async getUserById(
 
 @UseGuards(AuthGuard)
 @Patch(':id')
+@Roles('ADMIN')
 @ApiOperation({ summary: 'Actualizar usuario por ID' })
 public async updateUserById(
   @Param('id', ParseIntPipe) id: number,
@@ -103,7 +83,4 @@ public async updateUserById(
     throw new HttpException('Error updating user', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
-
-
-
 }

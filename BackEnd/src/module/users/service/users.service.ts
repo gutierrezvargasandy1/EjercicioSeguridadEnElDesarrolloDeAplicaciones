@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { User } from './entity/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from '../entity/user.entity';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
+import { UtilService } from 'src/common/services/util.service';
 
 @Injectable()
 export class UsersService {
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,
+              private util: UtilService
+              
+  ) {}
 
 
   public async insertUser(user: CreateUserDto): Promise<User> {
@@ -24,19 +28,26 @@ export class UsersService {
     });
   }
 
-  public async updateUser(id: number, userUpdated: UpdateUserDto): Promise<User> {
-    return await this.prisma.user.update({
-      where: { id },
-      data: userUpdated,
-      select: {
-        id: true,
-        name: true,
-        lastname: true,
-        username: true,
-        created_at: true
-      }
-    });
+public async updateUser(id: number, userUpdated: UpdateUserDto): Promise<User> {
+
+  const data: any = { ...userUpdated };
+
+  if (data.password) {
+    data.password = await this.util.hash(data.password);
   }
+
+  return await this.prisma.user.update({
+    where: { id },
+    data,
+    select: {
+      id: true,
+      name: true,
+      lastname: true,
+      username: true,
+      created_at: true
+    }
+  });
+}
 
   public async deleteUser(id: number): Promise<boolean> {
     await this.prisma.user.delete({

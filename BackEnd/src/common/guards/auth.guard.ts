@@ -1,35 +1,58 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
-import { Observable } from "rxjs";
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { Request } from "express";
 import { UtilService } from "../services/util.service";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-    constructor (private readonly  utilService: UtilService) {}
 
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest() as Request;
-        const token = this.extractTokenFromHeader(request);
+  constructor(
+    private readonly utilService: UtilService,
+    private readonly reflector: Reflector
+  ) {}
 
-        if (!token)
-            throw new UnauthorizedException();
+  async canActivate(context: ExecutionContext): Promise<boolean> {
 
-        try {
-            const payload = await this.utilService.verifyJWT(token);
-            request ['user'] = payload;
-        }
+    const request = context.switchToHttp().getRequest<Request>();
+    const token = this.extractTokenFromHeader(request);
 
-        catch(error){
-            throw new UnauthorizedException();
-        }
-
-        return true
-
-
+    if (!token) {
+      throw new UnauthorizedException('Token no proporcionado');
     }
 
-    private extractTokenFromHeader(request: Request): string | undefined {
-        const [type, token] = request.headers.authorization?.split(' ') ?? [];
-        return type === 'Bearer' ? token : undefined;
+    try {
+      const payload = await this.utilService.verifyAccessJWT(token);
+
+      request.user = payload;
+
+      const requiredRoles = this.reflector.get<string[]>(
+        'roles',
+        context.getHandler()
+      );
+
+      if (requiredRoles && requiredRoles.length > 0) {
+        const hasRole = requiredRoles.includes(payload.role);
+
+        if (!hasRole) {
+          throw new ForbiddenException('No tienes permisos');
+        }
+      }
+
+      return true;
+
+    } catch {
+      throw new UnauthorizedException('Token inválido o expirado');
     }
+  }
+
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
+  }
 }
