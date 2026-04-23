@@ -3,7 +3,7 @@ import { UsersService } from '../service/users.service';
 import { ApiOperation } from '@nestjs/swagger';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
-import { User } from '../entity/user.entity';
+import { User } from '../entities/user.entity';
 import { UtilService } from 'src/common/services/util.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { Roles } from 'src/common/decorators/role.decorator';

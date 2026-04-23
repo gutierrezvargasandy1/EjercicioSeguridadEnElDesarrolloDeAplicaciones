@@ -1,21 +1,19 @@
 import { Module } from '@nestjs/common';
-import { UsersService } from '../users/service/users.service';
-import { UsersController } from '../users/controller/users.controller';
+import { TaskService } from './service/task.service';
+import { TaskController } from './controller/task.controller';
 import { AuthGuard } from 'src/common/guards/auth.guard';
-import { AuthModule } from 'src/module/auth/auth.module';
 import { UtilService } from 'src/common/services/util.service';
 import { AuditLogModule } from '../auditLog/auditLog-module';
 
 @Module({
   imports: [
-    AuthModule,
     AuditLogModule
   ],
-  controllers: [UsersController],
+  controllers: [TaskController],
   providers: [
-    UsersService,
+    TaskService,
     AuthGuard,
     UtilService
   ],
 })
-export class UsersModule {}
+export class TaskModule {}

@@ -21,9 +21,9 @@ model User {
   created_at DateTime @default(now())
   role       Role     @default(CLIENT)
 
-
   tasks Task[]
   logs  Logs[]
+  auditLogs AuditLog[]   
 }
 
 model Task {
@@ -47,4 +47,18 @@ model Logs {
 
   session_id Int?
   user       User? @relation(fields: [session_id], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  action    String
+  entity    String
+  entityId  Int?
+  oldValue  Json?
+  newValue  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
