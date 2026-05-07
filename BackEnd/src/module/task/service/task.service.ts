@@ -57,6 +57,7 @@ export class TaskService {
         userId,
         action: 'CREATE_TASK',
         entity: 'TASK',
+        oldValue: null,
         entityId: created.id,
         newValue: created,
       });

@@ -41,6 +41,7 @@ export class UsersService {
         userId: created.id,
         action: 'CREATE_USER',
         entity: 'USER',
+        oldValue: null,
         entityId: created.id,
         newValue: created,
       });

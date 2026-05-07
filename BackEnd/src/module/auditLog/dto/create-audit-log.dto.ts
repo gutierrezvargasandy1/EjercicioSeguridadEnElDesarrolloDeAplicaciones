@@ -24,7 +24,4 @@ export class CreateAuditLogDto {
   @IsOptional()
   newValue?: any;
 
-  @IsOptional()
-  @IsString()
-  ip?: string;
 }

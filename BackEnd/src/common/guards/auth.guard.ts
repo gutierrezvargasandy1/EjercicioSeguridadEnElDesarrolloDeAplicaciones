@@ -23,8 +23,11 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromHeader(request);
 
+    console.log('[AuthGuard] Token extraído:', token ? 'existe' : 'NO existe');
+
     // ================= NO TOKEN =================
     if (!token) {
+      console.warn('[AuthGuard] No se proporcionó token');
       throw new AppException(
         'Token no proporcionado',
         HttpStatus.UNAUTHORIZED,
@@ -32,41 +35,52 @@ export class AuthGuard implements CanActivate {
       );
     }
 
+    let payload: any;
+
+    // ================= VERIFICAR TOKEN =================
     try {
-      const payload = await this.utilService.verifyAccessJWT(token);
-
-      request.user = payload;
-
-      const requiredRoles = this.reflector.get<string[]>(
-        'roles',
-        context.getHandler()
-      );
-
-      // ================= ROLES =================
-      if (requiredRoles && requiredRoles.length > 0) {
-
-        const hasRole = requiredRoles.includes(payload.role);
-
-        if (!hasRole) {
-          throw new AppException(
-            'No tienes permisos para acceder a este recurso',
-            HttpStatus.FORBIDDEN,
-            ErrorCodes.FORBIDDEN,
-          );
-        }
-      }
-
-      return true;
-
+      payload = await this.utilService.verifyAccessJWT(token);
+      console.log('[AuthGuard] Token verificado OK. Payload:', JSON.stringify(payload));
     } catch (error) {
-
-      // ================= TOKEN ERROR =================
+      const err = error as any;
+      console.error('[AuthGuard] Error al verificar token:', err?.message);
       throw new AppException(
         'Token inválido o expirado',
         HttpStatus.UNAUTHORIZED,
         ErrorCodes.INVALID_TOKEN,
       );
     }
+
+    // ================= ASIGNAR USUARIO =================
+    request.user = payload;
+    console.log('[AuthGuard] req.user asignado:', JSON.stringify(request.user));
+
+    // ================= ROLES =================
+    const requiredRoles = this.reflector.get<string[]>(
+      'roles',
+      context.getHandler()
+    );
+    console.log('[AuthGuard] Roles requeridos:', requiredRoles);
+    console.log('[AuthGuard] Rol del usuario:', payload?.role);
+
+    if (requiredRoles && requiredRoles.length > 0) {
+      const hasRole = requiredRoles.includes(payload.role);
+      console.log('[AuthGuard] ¿Tiene el rol?', hasRole);
+
+      if (!hasRole) {
+        console.warn('[AuthGuard] Acceso denegado por rol insuficiente');
+        throw new AppException(
+          'No tienes permisos para acceder a este recurso',
+          HttpStatus.FORBIDDEN,
+          ErrorCodes.FORBIDDEN,
+        );
+      }
+    } else {
+      console.log('[AuthGuard] Ruta sin roles específicos, acceso permitido');
+    }
+
+    console.log('[AuthGuard] Acceso PERMITIDO ✅');
+    return true;
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {

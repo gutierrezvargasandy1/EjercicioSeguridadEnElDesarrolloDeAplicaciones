@@ -3,9 +3,10 @@ export class AuditLog {
   userId: number;
   action: string;
   entity: string;
-  entityId?: number | null;
-  oldValue?: any;
-  newValue?: any;
-  ip: string | null;
+
+  entityId: number | null;     
+  oldValue: any | null;       
+  newValue: any | null;       
+
   createdAt: Date;
 }

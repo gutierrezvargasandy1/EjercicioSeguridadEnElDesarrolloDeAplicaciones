@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { UtilService } from '../../../common/services/util.service';
 import { AuditLogService } from 'src/module/auditLog/service/audit-log.service';
-
 import { AppException } from 'src/common/exceptions/AppException';
 import { ErrorCodes } from 'src/common/exceptions/errorCodes';
 import { HttpStatus } from '@nestjs/common';
@@ -36,7 +35,6 @@ export class AuthService {
   // ================== LOGIN ==================
 
   public async login(username: string, password: string) {
-
     const user = await this.getUserByUsername(username);
 
     if (!user) {
@@ -57,19 +55,16 @@ export class AuthService {
       );
     }
 
-    const accessPayload = {
+    const access_token = await this.util.generateAccessJWT({
       id: user.id,
       username: user.username,
       role: user.role,
-    };
+    });
 
-    const refreshPayload = {
+    const refresh_token = await this.util.generateRefreshJWT({
       id: user.id,
       username: user.username,
-    };
-
-    const access_token = await this.util.generateAccessJWT(accessPayload);
-    const refresh_token = await this.util.generateRefreshJWT(refreshPayload);
+    });
 
     const hashRT = await this.util.hash(refresh_token);
     await this.updateHash(user.id, hashRT);
@@ -79,6 +74,12 @@ export class AuthService {
       action: 'LOGIN',
       entity: 'AUTH',
       entityId: user.id,
+      oldValue: null,  // no había sesión antes
+      newValue: {
+        username: user.username,
+        role: user.role,
+        loginAt: new Date().toISOString(),
+      },
     });
 
     return { access_token, refresh_token };
@@ -87,7 +88,6 @@ export class AuthService {
   // ================== REFRESH ==================
 
   public async refresh(refreshToken: string) {
-
     if (!refreshToken) {
       throw new AppException(
         'Token no proporcionado',
@@ -97,8 +97,7 @@ export class AuthService {
     }
 
     const payload = await this.util.verifyRefreshJWT(refreshToken);
-
-    const user = await this.getUserById(payload.id);
+    const user    = await this.getUserById(payload.id);
 
     if (!user?.hash) {
       throw new AppException(
@@ -118,19 +117,16 @@ export class AuthService {
       );
     }
 
-    const accessPayload = {
+    const access_token = await this.util.generateAccessJWT({
       id: user.id,
       username: user.username,
       role: user.role,
-    };
+    });
 
-    const refreshPayload = {
+    const new_refresh_token = await this.util.generateRefreshJWT({
       id: user.id,
       username: user.username,
-    };
-
-    const access_token = await this.util.generateAccessJWT(accessPayload);
-    const new_refresh_token = await this.util.generateRefreshJWT(refreshPayload);
+    });
 
     const newHashRT = await this.util.hash(new_refresh_token);
     await this.updateHash(user.id, newHashRT);
@@ -140,17 +136,19 @@ export class AuthService {
       action: 'REFRESH_TOKEN',
       entity: 'AUTH',
       entityId: user.id,
+      oldValue: null,
+      newValue: {
+        refreshedAt: new Date().toISOString(),
+      },
     });
 
-    return {
-      access_token,
-      refresh_token: new_refresh_token,
-    };
+    return { access_token, refresh_token: new_refresh_token };
   }
 
   // ================== LOGOUT ==================
 
   public async logout(userId: number) {
+    const user = await this.getUserById(userId);
 
     await this.updateHash(userId, null);
 
@@ -159,13 +157,18 @@ export class AuthService {
       action: 'LOGOUT',
       entity: 'AUTH',
       entityId: userId,
+      oldValue: {
+        username: user?.username,
+        role: user?.role,
+        logoutAt: new Date().toISOString(),
+      },
+      newValue: null, // sesión cerrada
     });
   }
 
   // ================== REGISTER ==================
 
   public async register(data: any) {
-
     const exists = await this.getUserByUsername(data.username);
 
     if (exists) {
@@ -180,19 +183,27 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
-        name: data.name,
+        name:     data.name,
         lastname: data.lastname,
         username: data.username,
         password: hashedPassword,
-        role: data.role ?? 'CLIENT',
+        role:     data.role ?? 'CLIENT',
       },
     });
 
     await this.auditLog.createLog({
-      userId: user.id,
-      action: 'REGISTER',
-      entity: 'USER',
+      userId:   user.id,
+      action:   'REGISTER',
+      entity:   'USER',
       entityId: user.id,
+      oldValue: null, // no existía antes
+      newValue: {
+        name:      user.name,
+        lastname:  user.lastname,
+        username:  user.username,
+        role:      user.role,
+        createdAt: user.created_at,
+      },
     });
 
     return user;
@@ -201,27 +212,33 @@ export class AuthService {
   // ================== DELETE USER ==================
 
   public async deleteUser(userId: number) {
-
-    await this.updateHash(userId, null);
-
-    const deleted = await this.prisma.user.delete({
-      where: { id: userId },
-    });
+    const user = await this.getUserById(userId);
 
     await this.auditLog.createLog({
       userId,
-      action: 'DELETE_USER',
-      entity: 'USER',
+      action:   'DELETE_USER',
+      entity:   'USER',
       entityId: userId,
+      oldValue: {
+        name:      user?.name,
+        lastname:  user?.lastname,
+        username:  user?.username,
+        role:      user?.role,
+        createdAt: user?.created_at,
+      },
+      newValue: null, // ya no existe
     });
 
-    return deleted;
+    await this.updateHash(userId, null);
+
+    return this.prisma.user.delete({
+      where: { id: userId },
+    });
   }
 
   // ================== UPDATE PROFILE ==================
 
   public async updateProfile(userId: number, data: any) {
-
     const user = await this.getUserById(userId);
 
     if (!user) {
@@ -232,27 +249,43 @@ export class AuthService {
       );
     }
 
+    // Capturamos el estado ANTES de actualizar
+    const oldValue = {
+      name:     user.name,
+      lastname: user.lastname,
+      username: user.username,
+    };
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        name: data.name,
+        name:     data.name,
         lastname: data.lastname,
         username: data.username,
       },
       select: {
-        id: true,
-        name: true,
-        lastname: true,
-        username: true,
+        id:         true,
+        name:       true,
+        lastname:   true,
+        username:   true,
         created_at: true,
       },
     });
 
+    // Capturamos el estado DESPUÉS de actualizar
+    const newValue = {
+      name:     updated.name,
+      lastname: updated.lastname,
+      username: updated.username,
+    };
+
     await this.auditLog.createLog({
       userId,
-      action: 'UPDATE_PROFILE',
-      entity: 'USER',
+      action:   'UPDATE_PROFILE',
+      entity:   'USER',
       entityId: userId,
+      oldValue,
+      newValue,
     });
 
     return updated;
@@ -265,7 +298,6 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
   ) {
-
     const user = await this.getUserById(userId);
 
     if (!user) {
@@ -276,10 +308,7 @@ export class AuthService {
       );
     }
 
-    const isValid = await this.util.checkPassword(
-      currentPassword,
-      user.password,
-    );
+    const isValid = await this.util.checkPassword(currentPassword, user.password);
 
     if (!isValid) {
       throw new AppException(
@@ -293,16 +322,17 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        password: hashed,
-      },
+      data:  { password: hashed },
     });
 
     await this.auditLog.createLog({
       userId,
-      action: 'CHANGE_PASSWORD',
-      entity: 'USER',
+      action:   'CHANGE_PASSWORD',
+      entity:   'USER',
       entityId: userId,
+      // Nunca guardamos contraseñas, solo indicamos que cambió
+      oldValue: { passwordChanged: false },
+      newValue: { passwordChanged: true, changedAt: new Date().toISOString() },
     });
 
     return { message: 'Contraseña actualizada correctamente' };

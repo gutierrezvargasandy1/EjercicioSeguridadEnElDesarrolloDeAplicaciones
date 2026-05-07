@@ -1,26 +1,44 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, Logger } from '@nestjs/common';
 import { AuditLogService } from '../service/audit-log.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
 
-@Controller('audit-log')
+@Controller('api/audit-log')
 export class AuditLogController {
 
-  constructor(private readonly auditService: AuditLogService) {}
+  private readonly logger = new Logger(AuditLogController.name);
 
-  // ================= ADMIN: TODOS LOS MOVIMIENTOS =================
-  @Get('all')
-  @Roles('ADMIN')
-  @UseGuards(AuthGuard)
-  public async getAll() {
-    return this.auditService.findAll();
+  constructor(private readonly auditService: AuditLogService) {
+
   }
 
-  // ================= USER: SUS MOVIMIENTOS =================
-  @Get('me')
-  @Roles('ADMIN', 'CLIENT')
+  @Get('all')
   @UseGuards(AuthGuard)
+  @Roles('ADMIN')
+  public async getAll() {
+    console.log('[AuditLogController][getAll] >>> Entró al método');
+    try {
+      const result = await this.auditService.findAll();
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard)
+  @Roles('ADMIN', 'CLIENT')
   public async getMyLogs(@Req() req: any) {
-    return this.auditService.findByUser(req.user.id);
+
+    if (!req.user || !req.user.id) {
+    }
+
+    try {
+      const userId = req.user?.id;
+      const result = await this.auditService.findByUser(userId);
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 }
