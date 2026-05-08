@@ -87,64 +87,127 @@ export class AuthService {
 
   // ================== REFRESH ==================
 
-  public async refresh(refreshToken: string) {
-    if (!refreshToken) {
-      throw new AppException(
-        'Token no proporcionado',
-        HttpStatus.UNAUTHORIZED,
-        ErrorCodes.UNAUTHORIZED,
-      );
-    }
+public async refresh(refreshToken: string) {
 
-    const payload = await this.util.verifyRefreshJWT(refreshToken);
-    const user    = await this.getUserById(payload.id);
+  if (!refreshToken) {
 
-    if (!user?.hash) {
-      throw new AppException(
-        'Usuario no válido',
-        HttpStatus.UNAUTHORIZED,
-        ErrorCodes.USER_NOT_FOUND_DB,
-      );
-    }
+    throw new AppException(
+      'Token no proporcionado',
+      HttpStatus.UNAUTHORIZED,
+      ErrorCodes.UNAUTHORIZED,
+    );
+  }
 
-    const isMatch = await this.util.checkHash(refreshToken, user.hash);
+  let payload: any;
 
-    if (!isMatch) {
-      throw new AppException(
-        'Refresh token inválido',
-        HttpStatus.UNAUTHORIZED,
-        ErrorCodes.INVALID_TOKEN,
-      );
-    }
+  // ================= VALIDAR JWT =================
 
-    const access_token = await this.util.generateAccessJWT({
+  try {
+
+    payload =
+      await this.util.verifyRefreshJWT(refreshToken);
+
+  } catch {
+
+    throw new AppException(
+      'Refresh token inválido',
+      HttpStatus.UNAUTHORIZED,
+      ErrorCodes.INVALID_TOKEN,
+    );
+  }
+
+  // ================= BUSCAR USUARIO =================
+
+  const user =
+    await this.getUserById(payload.id);
+
+  if (!user?.hash) {
+
+    throw new AppException(
+      'Usuario no válido',
+      HttpStatus.UNAUTHORIZED,
+      ErrorCodes.USER_NOT_FOUND_DB,
+    );
+  }
+
+  // ================= VALIDAR HASH =================
+
+  const isMatch =
+    await this.util.checkHash(
+      refreshToken,
+      user.hash,
+    );
+
+  if (!isMatch) {
+
+    throw new AppException(
+      'Refresh token inválido',
+      HttpStatus.UNAUTHORIZED,
+      ErrorCodes.INVALID_TOKEN,
+    );
+  }
+
+  // ================= GENERAR NUEVOS TOKENS =================
+
+  const access_token =
+    await this.util.generateAccessJWT({
+
       id: user.id,
+
       username: user.username,
+
       role: user.role,
     });
 
-    const new_refresh_token = await this.util.generateRefreshJWT({
+  const new_refresh_token =
+    await this.util.generateRefreshJWT({
+
       id: user.id,
+
       username: user.username,
     });
 
-    const newHashRT = await this.util.hash(new_refresh_token);
-    await this.updateHash(user.id, newHashRT);
+  // ================= GUARDAR NUEVO HASH =================
 
-    await this.auditLog.createLog({
-      userId: user.id,
-      action: 'REFRESH_TOKEN',
-      entity: 'AUTH',
-      entityId: user.id,
-      oldValue: null,
-      newValue: {
-        refreshedAt: new Date().toISOString(),
-      },
-    });
+  const newHashRT =
+    await this.util.hash(new_refresh_token);
 
-    return { access_token, refresh_token: new_refresh_token };
-  }
+  await this.updateHash(
+    user.id,
+    newHashRT,
+  );
 
+  // ================= AUDITORÍA =================
+
+  await this.auditLog.createLog({
+
+    userId: user.id,
+
+    action: 'REFRESH_TOKEN',
+
+    entity: 'AUTH',
+
+    entityId: user.id,
+
+    oldValue: null,
+
+    newValue: {
+
+      refreshedAt:
+        new Date().toISOString(),
+    },
+  });
+
+  // ================= RESPONSE =================
+
+  return {
+
+    access_token,
+
+    refresh_token:
+      new_refresh_token,
+  };
+}
   // ================== LOGOUT ==================
 
   public async logout(userId: number) {

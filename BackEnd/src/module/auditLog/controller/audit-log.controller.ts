@@ -16,7 +16,6 @@ export class AuditLogController {
   @UseGuards(AuthGuard)
   @Roles('ADMIN')
   public async getAll() {
-    console.log('[AuditLogController][getAll] >>> Entró al método');
     try {
       const result = await this.auditService.findAll();
       return result;

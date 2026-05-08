@@ -45,6 +45,8 @@ npm install cookie-parser
 
 npm install --save-dev prisma dotenv
 
+npm install class-transformer
+
 DATABASE_URL="postgresql://postgres:linux@localhost:5432/task_db"
 
 JWT_ACCESS_SECRET="access_secret_super_segura"

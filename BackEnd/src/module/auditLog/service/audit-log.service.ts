@@ -43,7 +43,6 @@ export class AuditLogService {
   // ================= ADMIN =================
   async findAll() {
     try {
-      console.log('[AuditLogService][findAll] Ejecutando prisma.auditLog.findMany()...');
       const logs = await this.prisma.auditLog.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
@@ -73,7 +72,6 @@ export class AuditLogService {
     }
 
     try {
-      console.log('[AuditLogService][findByUser] Ejecutando findMany con userId:', userId);
       const logs = await this.prisma.auditLog.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },

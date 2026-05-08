@@ -153,18 +153,31 @@ export class UsersService {
     }
   }
 
-  // ================= GET USERS =================
-  public async getUsers(): Promise<User[]> {
-    return this.prisma.user.findMany({
+// ================= GET USERS =================
+public async getUsersExcept(userId: number): Promise<User[]> {
+  try {
+    return await this.prisma.user.findMany({
+      where: {
+        id: {
+          not: userId, // <- aquí está la magia
+        },
+      },
       select: {
         id: true,
         name: true,
         lastname: true,
         username: true,
-        created_at: true
-      }
+        created_at: true,
+      },
     });
+  } catch (error) {
+    throw new AppException(
+      'Error al obtener los usuarios',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      ErrorCodes.DATABASE_ERROR,
+    );
   }
+}
 
   // ================= GET USER BY ID =================
   public async getUserById(id: number): Promise<User> {

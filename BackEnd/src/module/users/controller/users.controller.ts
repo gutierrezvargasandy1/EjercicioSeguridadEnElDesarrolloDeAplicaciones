@@ -29,13 +29,14 @@ export class UsersController {
   }
 
 
-  @UseGuards(AuthGuard)
-  @Get()  @UseGuards(AuthGuard)
-  @Roles('ADMIN')
-  @ApiOperation({ summary: 'Obtener todos los usuarios' })
-  public async getUsers(): Promise<User[]> {
+@UseGuards(AuthGuard)
+@Get()
+@Roles('ADMIN')
+@ApiOperation({ summary: 'Obtener todos los usuarios excepto el autenticado' })
+public async getUsers(@Request() req): Promise<User[]> {
   try {
-    return await this.usersService.getUsers();
+    const currentUserId = req.user.id; // viene del JWT
+    return await this.usersService.getUsersExcept(currentUserId);
   } catch (error) {
     throw new HttpException('Error fetching users', HttpStatus.INTERNAL_SERVER_ERROR);
   }

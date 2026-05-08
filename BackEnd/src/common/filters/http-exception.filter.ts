@@ -15,21 +15,9 @@ export class AllExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
 
-    console.error('[AllExceptionFilter] ========== EXCEPCIÓN CAPTURADA ==========');
-    console.error('[AllExceptionFilter] Tipo:', exception?.constructor?.name);
-    console.error('[AllExceptionFilter] Mensaje:', exception?.message);
-    console.error('[AllExceptionFilter] Código Prisma:', exception?.code);
-    console.error('[AllExceptionFilter] Stack:', exception?.stack);
-    try {
-      console.error('[AllExceptionFilter] JSON:', JSON.stringify(exception, null, 2));
-    } catch {
-      console.error('[AllExceptionFilter] (no se pudo serializar el error)');
-    }
-    console.error('[AllExceptionFilter] =========================================');
 
     // ================= PRISMA ERRORS =================
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      console.error('[AllExceptionFilter] → Es un PrismaClientKnownRequestError, código:', exception.code);
 
       switch (exception.code) {
 
@@ -64,14 +52,12 @@ export class AllExceptionFilter implements ExceptionFilter {
 
     // ================= APP ERROR =================
     if (exception instanceof AppException) {
-      console.error('[AllExceptionFilter] → Es un AppException, status:', exception.getStatus());
       return response
         .status(exception.getStatus())
         .json(exception.getResponse());
     }
 
     // ================= UNKNOWN =================
-    console.error('[AllExceptionFilter] → Excepción DESCONOCIDA, retornando 500');
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Error interno del servidor',
