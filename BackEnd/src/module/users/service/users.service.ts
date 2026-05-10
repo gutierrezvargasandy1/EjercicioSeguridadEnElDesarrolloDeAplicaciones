@@ -17,10 +17,30 @@ export class UsersService {
     private auditLogService: AuditLogService,
   ) {}
 
+  // ================= GET USERNAME =================
+
+  public async getUserByUsername(username: string) {
+    return this.prisma.user.findUnique({
+      where: { username }
+    });
+  }
+
   // ================= CREATE USER =================
+
   public async insertUser(user: CreateUserDto): Promise<User> {
 
+    const exists = await this.getUserByUsername(user.username);
+
+    if (exists) {
+      throw new AppException(
+        'El usuario ya existe',
+        HttpStatus.CONFLICT,
+        ErrorCodes.USER_ALREADY_EXISTS,
+      );
+    }
+
     try {
+
       const hashedPassword = await this.util.hash(user.password);
 
       const created = await this.prisma.user.create({
@@ -49,42 +69,77 @@ export class UsersService {
       return created;
 
     } catch (error) {
+
       throw new AppException(
         'Error al crear el usuario',
         HttpStatus.INTERNAL_SERVER_ERROR,
-        ErrorCodes.USER_CREATE_FAILED, 
+        ErrorCodes.USER_CREATE_FAILED,
       );
     }
   }
 
-  // ================= UPDATE USER =================
-  public async updateUser(
-    id: number,
-    userUpdated: UpdateUserDto
-  ): Promise<User> {
 
-    const oldUser = await this.prisma.user.findUnique({
-      where: { id }
-    });
+public async updateUser(
+  id: number,
+  userUpdated: UpdateUserDto
+): Promise<User> {
 
-    if (!oldUser) {
+  // ================= VALIDAR USUARIO EXISTE =================
+
+  const oldUser = await this.prisma.user.findUnique({
+    where: { id }
+  });
+
+  if (!oldUser) {
+    throw new AppException(
+      'Usuario no encontrado',
+      HttpStatus.NOT_FOUND,
+      ErrorCodes.USER_NOT_FOUND_DB,
+    );
+  }
+
+  // ================= VALIDAR USERNAME DUPLICADO =================
+
+  if (userUpdated.username) {
+
+    const existingUser =
+      await this.prisma.user.findFirst({
+
+        where: {
+
+          username: userUpdated.username,
+
+          NOT: {
+            id
+          }
+        }
+      });
+
+    if (existingUser) {
+
       throw new AppException(
-        'Usuario no encontrado',
-        HttpStatus.NOT_FOUND,
-        ErrorCodes.USER_NOT_FOUND_DB,
+        'El usuario ya existe',
+        HttpStatus.CONFLICT,
+        ErrorCodes.USER_ALREADY_EXISTS,
       );
     }
+  }
 
-    try {
-      const data: any = { ...userUpdated };
+  // ================= UPDATE =================
 
-      if (data.password) {
-        data.password = await this.util.hash(data.password);
-      }
+  try {
 
-      const updated = await this.prisma.user.update({
+    const updated =
+      await this.prisma.user.update({
+
         where: { id },
-        data,
+
+        data: {
+          name: userUpdated.name,
+          lastname: userUpdated.lastname,
+          username: userUpdated.username,
+        },
+
         select: {
           id: true,
           name: true,
@@ -94,64 +149,93 @@ export class UsersService {
         }
       });
 
-      await this.auditLogService.createLog({
-        userId: id,
-        action: 'UPDATE_USER',
-        entity: 'USER',
-        entityId: id,
-        oldValue: oldUser,
-        newValue: updated,
-      });
+    await this.auditLogService.createLog({
 
-      return updated;
+      userId: id,
 
-    } catch (error) {
-      throw new AppException(
-        'Error al actualizar el usuario',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        ErrorCodes.USER_UPDATE_FAILED, 
-      );
-    }
+      action: 'UPDATE_USER',
+
+      entity: 'USER',
+
+      entityId: id,
+
+      oldValue: oldUser,
+
+      newValue: updated,
+    });
+
+    return updated;
+
+  } catch (error) {
+
+    throw new AppException(
+      'Error al actualizar el usuario',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      ErrorCodes.USER_UPDATE_FAILED,
+    );
+  }
+}
+
+public async deleteUser(id: number): Promise<boolean> {
+
+  const oldUser = await this.prisma.user.findUnique({
+    where: { id }
+  });
+
+  if (!oldUser) {
+    throw new AppException(
+      'Usuario no encontrado',
+      HttpStatus.NOT_FOUND,
+      ErrorCodes.USER_NOT_FOUND_DB,
+    );
   }
 
-  // ================= DELETE USER =================
-  public async deleteUser(id: number): Promise<boolean> {
+  // ================= VALIDAR TAREAS =================
 
-    const oldUser = await this.prisma.user.findUnique({
+  const tasksCount = await this.prisma.task.count({
+    where: {
+      user_id: id
+    }
+  });
+
+  if (tasksCount > 0) {
+    throw new AppException(
+      'No se puede eliminar el usuario porque tiene tareas asignadas',
+      HttpStatus.CONFLICT,
+      ErrorCodes.USER_HAS_TASKS,
+    );
+  }
+
+  try {
+
+    await this.auditLogService.createLog({
+
+      userId: id,
+
+      action: 'DELETE_USER',
+
+      entity: 'USER',
+
+      entityId: id,
+
+      oldValue: oldUser,
+    });
+
+    await this.prisma.user.delete({
       where: { id }
     });
 
-    if (!oldUser) {
-      throw new AppException(
-        'Usuario no encontrado',
-        HttpStatus.NOT_FOUND,
-        ErrorCodes.USER_NOT_FOUND_DB,
-      );
-    }
+    return true;
 
-    try {
-      await this.prisma.user.delete({
-        where: { id }
-      });
+  } catch (error) {
 
-      await this.auditLogService.createLog({
-        userId: id,
-        action: 'DELETE_USER',
-        entity: 'USER',
-        entityId: id,
-        oldValue: oldUser,
-      });
-
-      return true;
-
-    } catch (error) {
-      throw new AppException(
-        'Error al eliminar el usuario',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        ErrorCodes.USER_DELETE_FAILED, 
-      );
-    }
+    throw new AppException(
+      'Error al eliminar el usuario',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      ErrorCodes.USER_DELETE_FAILED,
+    );
   }
+}
 
 // ================= GET USERS =================
 public async getUsersExcept(userId: number): Promise<User[]> {

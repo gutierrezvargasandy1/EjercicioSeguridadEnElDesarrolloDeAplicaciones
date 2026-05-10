@@ -274,30 +274,59 @@ public async refresh(refreshToken: string) {
 
   // ================== DELETE USER ==================
 
-  public async deleteUser(userId: number) {
-    const user = await this.getUserById(userId);
+ public async deleteUser(userId: number) {
 
-    await this.auditLog.createLog({
-      userId,
-      action:   'DELETE_USER',
-      entity:   'USER',
-      entityId: userId,
-      oldValue: {
-        name:      user?.name,
-        lastname:  user?.lastname,
-        username:  user?.username,
-        role:      user?.role,
-        createdAt: user?.created_at,
-      },
-      newValue: null, // ya no existe
-    });
+  const user = await this.getUserById(userId);
 
-    await this.updateHash(userId, null);
+  // ================= VALIDAR TAREAS =================
 
-    return this.prisma.user.delete({
-      where: { id: userId },
-    });
+  const tasksCount = await this.prisma.task.count({
+    where: {
+      user_id: userId
+    }
+  });
+
+  if (tasksCount > 0) {
+    throw new AppException(
+      'No puedes eliminar tu cuenta porque tienes tareas asignadas',
+      HttpStatus.CONFLICT,
+      ErrorCodes.USER_HAS_TASKS,
+    );
   }
+
+  // ================= AUDITORÍA =================
+
+  await this.auditLog.createLog({
+
+    userId,
+
+    action: 'DELETE_USER',
+
+    entity: 'USER',
+
+    entityId: userId,
+
+    oldValue: {
+      name: user?.name,
+      lastname: user?.lastname,
+      username: user?.username,
+      role: user?.role,
+      createdAt: user?.created_at,
+    },
+
+    newValue: null,
+  });
+
+  // ================= LOGOUT =================
+
+  await this.updateHash(userId, null);
+
+  // ================= DELETE =================
+
+  return this.prisma.user.delete({
+    where: { id: userId },
+  });
+}
 
   // ================== UPDATE PROFILE ==================
 

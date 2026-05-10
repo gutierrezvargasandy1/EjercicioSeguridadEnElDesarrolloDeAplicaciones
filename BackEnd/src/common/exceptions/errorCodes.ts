@@ -7,6 +7,7 @@ export enum ErrorCodes {
     TOKEN_EXPIRED = 'TOKEN_EXPIRED',
     INVALID_TOKEN = 'INVALID_TOKEN',
     FORBIDDEN = 'FORBIDDEN',
+    
 
 
     // ================= AUDIT LOG =================
@@ -19,6 +20,7 @@ export enum ErrorCodes {
     USER_CREATE_FAILED = 'USER_CREATE_FAILED',
     USER_UPDATE_FAILED = 'USER_UPDATE_FAILED',
     USER_DELETE_FAILED = 'USER_DELETE_FAILED',
+    USER_HAS_TASKS = 'USER_HAS_TASKS',
 
     // ================= TASK =================
     TASK_NOT_FOUND = 'TASK_NOT_FOUND',

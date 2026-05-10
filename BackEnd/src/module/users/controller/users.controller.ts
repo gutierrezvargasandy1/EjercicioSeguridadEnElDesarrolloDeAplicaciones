@@ -15,19 +15,16 @@ export class UsersController {
     private readonly utilService: UtilService
   ) {}
 
-  @Post()
-  @UseGuards(AuthGuard)
-  @Roles('ADMIN')
-  @ApiOperation({ summary: 'Registrar un nuevo usuario' })
-  public async insertUser(@Body() user: CreateUserDto): Promise<any> {
-    try {
-      user.password = await this.utilService.hash(user.password);
-      return await this.usersService.insertUser(user);
-    } catch (error) {
-      throw new HttpException('Error creating user', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
+@Post()
+@UseGuards(AuthGuard)
+@Roles('ADMIN')
+@ApiOperation({ summary: 'Registrar un nuevo usuario' })
+public async insertUser(
+  @Body() user: CreateUserDto
+): Promise<any> {
 
+  return await this.usersService.insertUser(user);
+}
 
 @UseGuards(AuthGuard)
 @Get()
@@ -48,12 +45,9 @@ public async getUsers(@Request() req): Promise<User[]> {
 @ApiOperation({ summary: 'Eliminar usuario por ID' })
 public async deleteUser(
   @Param('id', ParseIntPipe) id: number
-): Promise<any> {
-  try {
-    return await this.usersService.deleteUser(id);
-  } catch (error) {
-    throw new HttpException('Error deleting user', HttpStatus.INTERNAL_SERVER_ERROR);
-  }
+): Promise<boolean> {
+
+  return await this.usersService.deleteUser(id);
 }
 
 @UseGuards(AuthGuard)
@@ -78,10 +72,10 @@ public async updateUserById(
   @Param('id', ParseIntPipe) id: number,
   @Body() updateUserDto: UpdateUserDto
 ): Promise<User> {
-  try {
-    return await this.usersService.updateUser(id, updateUserDto);
-  } catch (error) {
-    throw new HttpException('Error updating user', HttpStatus.INTERNAL_SERVER_ERROR);
-  }
+
+  return await this.usersService.updateUser(
+    id,
+    updateUserDto
+  );
 }
 }
